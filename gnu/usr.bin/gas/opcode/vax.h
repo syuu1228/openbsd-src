@@ -1,3 +1,5 @@
+/*	$OpenBSD: src/gnu/usr.bin/gas/opcode/vax.h,v 1.2 1998/02/15 18:50:10 niklas Exp $	*/
+
 /* Vax opcde list.
    Copyright (C) 1989, Free Software Foundation, Inc.
 
