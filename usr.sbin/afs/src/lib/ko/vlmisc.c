@@ -1,6 +1,6 @@
-/*	$OpenBSD: src/usr.sbin/afs/src/util/Attic/timeprio.h,v 1.1.1.1 1998/09/14 21:53:26 art Exp $	*/
+/*	$OpenBSD: src/usr.sbin/afs/src/lib/ko/vlmisc.c,v 1.1 1999/04/30 01:59:11 art Exp $	*/
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -37,34 +37,56 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _TIMEPRIO_H
-#define _TIMEPRIO_H 1
+#include "ko_locl.h"
 
-#include <time.h>
-#include "prio.h"
-#include "bool.h"
+RCSID("$KTH: vlmisc.c,v 1.1 1999/03/03 15:33:21 assar Exp $");
 
-typedef struct tpel {
-    time_t time;
-    void *data;
-} Tpel;
+/*
+ * Convert old style vldbentry `old` to newer vldbNentry style `new'
+ */
 
-typedef Prio	Timeprio;
+void
+vldb2vldbN (const vldbentry *old, nvldbentry *new)
+{
+    int i;
 
-Timeprio *timeprionew(unsigned size);
+    strncpy (new->name, old->name, VLDB_MAXNAMELEN);
+    new->name[VLDB_MAXNAMELEN-1] = '\0';
+    if (old->nServers > MAXNSERVERS)
+	new->nServers = MAXNSERVERS;
+    else
+	new->nServers = old->nServers;
+    
+    for (i = 0; i < new->nServers ; i++) {
+	new->serverNumber[i]    = old->serverNumber[i];
+	new->serverPartition[i] = old->serverPartition[i];
+	new->serverFlags[i]     = old->serverFlags[i];
+    }
+    for (i = 0; i < MAXTYPES ; i++)
+	new->volumeId[i] = old->volumeId[i];
+    new->cloneId = old->cloneId;
+    new->flags = old->flags;
+}
 
-void timepriofree(Timeprio *prio);
-
-int  timeprioinsert(Timeprio *prio, time_t time, void *data);
-
-void *timepriohead(Timeprio *prio);
-
-void timeprioremove(Timeprio *prio);
-
-Bool timeprioemptyp(Timeprio *prio);
-
-time_t timepriotimehead(Timeprio *prio);
-
-#endif
-
-
+void
+volintInfo2xvolintInfo (const volintInfo *old, xvolintInfo *new)
+{
+    memset (new, 0, sizeof(*new));
+    strcpy (new->name, old->name);
+    new->volid		= old->volid;
+    new->type		= old->type;
+    new->backupID	= old->backupID;
+    new->parentID	= old->parentID;
+    new->cloneID	= old->cloneID;
+    new->status		= old->status;
+    new->copyDate	= old->copyDate;
+    new->inUse		= old->inUse;
+    new->creationDate	= old->creationDate;
+    new->accessDate	= old->accessDate;
+    new->updateDate	= old->updateDate;
+    new->backupDate	= old->backupDate;
+    new->dayUse		= old->dayUse;
+    new->filecount	= old->filecount;
+    new->maxquota	= old->maxquota;
+    new->size		= old->size;
+}

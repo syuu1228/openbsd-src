@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/usr.sbin/afs/src/util/Attic/timeprio.c,v 1.1.1.1 1998/09/14 21:53:24 art Exp $	*/
+/*	$OpenBSD: src/usr.sbin/afs/src/util/heap.h,v 1.1 1999/04/30 01:59:17 art Exp $	*/
 /*
  * Copyright (c) 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
@@ -37,78 +37,55 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-RCSID("$KTH: timeprio.c,v 1.1 1998/07/07 15:57:11 lha Exp $");
-#endif
+/*
+ * an abstract heap implementation
+ */
 
-#include <stdlib.h>
+/* $KTH: heap.h,v 1.1 1998/12/28 00:14:41 assar Exp $ */
+
+#ifndef _HEAP_
+#define _HEAP_
+
 #include "bool.h"
-#include "timeprio.h"
 
+typedef int (*heap_cmp_fn)(const void *, const void *);
 
-static int 
-timeprio_cmp(void *a1, void *b1)
-{
-    Tpel *a = a1, *b = b1;
+typedef unsigned heap_ptr;
 
-    return a->time > b->time;
-}
+struct heap_element {
+    const void *data;
+    heap_ptr *ptr;
+};
 
+typedef struct heap_element heap_element;
 
-Timeprio *
-timeprionew(unsigned size)
-{
-    return (Timeprio *) prionew(size, timeprio_cmp);
-}
+struct heap {
+    heap_cmp_fn cmp;
+    unsigned max_sz;
+    unsigned sz;
+    heap_element *data;
+};
 
-void
-timepriofree(Timeprio *prio)
-{
-    priofree(prio);
-}
+typedef struct heap Heap;
+
+Heap *heap_new (unsigned sz, heap_cmp_fn cmp);
 
 int
-timeprioinsert(Timeprio *prio, time_t time, void *data)
-{
-    Tpel *el = malloc(sizeof(Tpel));
-    if (!el)
-	return -1;
+heap_insert (Heap *h, const void *data, heap_ptr *ptr);
 
-    el->time = time;
-    el->data = data;
-    if (prioinsert(prio, el)) {
-	free(el);
-	el = NULL;
-    }
-    return el ? 0 : -1;
-}
-
-void *
-timepriohead(Timeprio *prio)
-{
-    Tpel *el = priohead(prio);
-    
-    return el->data;
-}
+const void *
+heap_head (Heap *h);
 
 void
-timeprioremove(Timeprio *prio)
-{
-    void *el;
+heap_remove_head (Heap *h);
 
-    if (timeprioemptyp((Prio *)prio))
-	return;
+int
+heap_remove (Heap *h, heap_ptr ptr);
 
-    el = priohead(prio);
-    if (el) free (el);
-    
-    prioremove((Prio *)prio);
-}
-    
-Bool 
-timeprioemptyp(Timeprio *prio)
-{
-    return prioemptyp(prio); 
-}
+void
+heap_delete (Heap *h);
 
+Bool
+heap_verify (Heap *h);
+
+#endif /* _HEAP_ */
