@@ -1,5 +1,5 @@
-/*	$OpenBSD: src/sys/arch/vax/boot/Attic/srt0.s,v 1.6 1998/05/14 13:50:36 niklas Exp $ */
-/*	$NetBSD: srt0.s,v 1.9 1997/03/22 12:47:32 ragge Exp $ */
+/*	$OpenBSD: src/sys/arch/vax/boot/common/Attic/srt0.s,v 1.1 2000/04/27 02:26:26 bjc Exp $ */
+/*	$NetBSD: srt0.s,v 1.2 1999/05/23 21:58:19 ragge Exp $ */
 /*
  * Copyright (c) 1994 Ludd, University of Lule}, Sweden.
  * All rights reserved.
@@ -32,7 +32,7 @@
 
  /* All bugs are subject to removal without further notice */
 
-
+#include "../include/asm.h"
 /*
  * Auto-moving startup code for standalone programs. Can be loaded
  * (almost) anywhere in memory but moves itself to the position
@@ -41,8 +41,8 @@
  * position set in a.out header.
  */
 
-start0:	.set	start0,0	# passing -e start0 to ld gives OK start addr
-	.globl	start0
+nisse:	.set	nisse,0		# pass -e nisse to ld gives OK start addr
+	.globl	nisse
 
 _start:	.globl	_start
 	nop;nop;		# If we get called by calls, or something
@@ -58,28 +58,32 @@ _start:	.globl	_start
 	subl2	$52, sp		# do not overwrite saved boot-registers
 
 	subl3	$_start, $_edata, r0
-	moval	_start, r1
-	subl3	$_start, $_end, r2
+	movab	_start, r1
 	movl	$_start, r3
-	movc5	r0, (r1), $0, r2, (r3)
+	movc3	r0,(r1),(r3)	# Kopiera text + data
+	subl3	$_edata, $_end, r2
+	movc5	$0,(r3),$0,r2,(r3) # Nolla bss också.
+
 	jsb	1f
 1:	movl    $relocated, (sp)   # return-address on top of stack
 	rsb                        # can be replaced with new address
 relocated:	                   # now relocation is done !!!
+	movl	r10,_bootdev	# Save bootdev early
+	movl	r11,_howto	# howto also...
 	movl	sp, _bootregs
-	calls	$0, _setup
 	calls	$0, _Xmain	# Were here!
 	halt			# no return
 
-	
-        .globl _hoppabort
-_hoppabort: .word 0x0
-        movl    4(ap), r6
-        movl    8(ap), r11
-        movl    0xc(ap), r10
-	movl	16(ap), r9
-	movl	_memsz,r8
-        calls   $0,(r6)
+ENTRY(machdep_start, 0)
+	mtpr	$0x1f,$0x12	# Block all interrupts
+	mtpr	$0,$0x18	# stop real time interrupt clock
+	movl	4(ap), r6
+	movl	_howto, r11
+	movl	_opendev, r10
+	movl	20(ap), r9
+	movl	_memsz, r8
+	calls	$0,(r6)
+	ret
 
 	.globl	_memsz
 _memsz:	.long	0x0
