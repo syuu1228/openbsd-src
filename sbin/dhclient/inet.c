@@ -1,6 +1,6 @@
-/* inet.c
+/*	$OpenBSD: src/sbin/dhclient/inet.c,v 1.3 2004/02/04 12:16:56 henning Exp $	*/
 
-   Subroutines to manipulate internet addresses in a safely portable
+/* Subroutines to manipulate internet addresses in a safely portable
    way... */
 
 /*
