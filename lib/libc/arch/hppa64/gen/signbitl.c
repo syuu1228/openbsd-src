@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/lib/libc/arch/vax/gen/isnormal.c,v 1.2 2008/12/09 19:52:34 martynas Exp $	*/
+/*	$OpenBSD: src/lib/libc/arch/hppa64/gen/signbitl.c,v 1.1 2008/12/09 19:52:33 martynas Exp $	*/
 /*
  * Copyright (c) 2008 Martynas Venckus <martynas@openbsd.org>
  *
@@ -15,26 +15,14 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <machine/cdefs.h>
-#include <machine/vaxfp.h>
+#include <sys/types.h>
+#include <machine/ieee.h>
 #include <math.h>
 
 int
-__isnormal(double d)
+__signbitl(long double e)
 {
-	struct vax_d_floating *p = (struct vax_d_floating *)&d;
+	struct ieee_ext *p = (struct ieee_ext *)&e;
 
-	return (p->dflt_exp != 0);
+	return p->ext_sign;
 }
-
-int
-__isnormalf(float f)
-{
-	struct vax_f_floating *p = (struct vax_f_floating *)&f;
-
-	return (p->fflt_exp != 0);
-}
-
-#ifdef __weak_alias
-__weak_alias(__isnormall, __isnormal);
-#endif /* __weak_alias */
