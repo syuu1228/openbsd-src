@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/lib/libc/arch/powerpc/gen/fabs.c,v 1.4 2008/12/10 01:15:02 martynas Exp $	*/
+/*	$OpenBSD: src/lib/libm/arch/powerpc/s_fabs.c,v 1.1 2011/07/08 19:21:42 martynas Exp $	*/
 
 /*
  * Copyright (c) 2002 Theo de Raadt

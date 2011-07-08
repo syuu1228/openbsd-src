@@ -1,11 +1,11 @@
-/* $OpenBSD: src/lib/libc/arch/m68k/gen/modf.S,v 1.4 2005/08/07 16:40:14 espie Exp $ */
-/*-
- * Copyright (c) 1990 The Regents of the University of California.
- * All rights reserved.
+/* $OpenBSD: src/lib/libm/arch/sparc/s_fabs.S,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
+/*
+ * Copyright (c) 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
- * This code is derived from software contributed to Berkeley by
- * the Systems Programming Group of the University of Utah Computer
- * Science Department.
+ * This software was developed by the Computer Systems Engineering group
+ * at Lawrence Berkeley Laboratory under DARPA contract BG 91-66 and
+ * contributed to Berkeley.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,19 +32,13 @@
  * SUCH DAMAGE.
  */
 
+/* fabs - floating absolute value */
+
 #include "DEFS.h"
 
-/*
- * double modf(val, iptr)
- * returns: xxx and n (in *iptr) where val == n.xxx
- */
-ENTRY(modf)
-	fmoved	sp@(4),fp0
-	movel	sp@(12),a0
-	fintrzx	fp0,fp1
-	fmoved	fp1,a0@
-	fsubx	fp1,fp0
-	fmoved	fp0,sp@-
-	movel	sp@+,d0
-	movel	sp@+,d1
-	rts
+WEAK_ALIAS(fabsl, fabs)
+ENTRY(fabs)
+	std	%o0, [%sp + 32]		! return value => %f0:f1
+	ldd	[%sp + 32], %f0		! (via kernel %o0/%o1 slot)
+	retl
+	 fabss	%f0, %f0		! return absolute value

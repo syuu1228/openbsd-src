@@ -1,11 +1,7 @@
-/* $OpenBSD: src/lib/libc/arch/sparc/gen/fabs.S,v 1.6 2008/12/09 20:21:07 martynas Exp $ */
-/*
- * Copyright (c) 1992, 1993
+/*	$OpenBSD: src/lib/libm/noieee_src/n_frexp.c,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
+/*-
+ * Copyright (c) 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
- *
- * This software was developed by the Computer Systems Engineering group
- * at Lawrence Berkeley Laboratory under DARPA contract BG 91-66 and
- * contributed to Berkeley.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,13 +28,42 @@
  * SUCH DAMAGE.
  */
 
-/* fabs - floating absolute value */
+/* LINTLIBRARY */
 
-#include "DEFS.h"
+#include <sys/cdefs.h>
+#include <sys/types.h>
+#include <math.h>
 
-WEAK_ALIAS(fabsl, fabs)
-ENTRY(fabs)
-	std	%o0, [%sp + 32]		! return value => %f0:f1
-	ldd	[%sp + 32], %f0		! (via kernel %o0/%o1 slot)
-	retl
-	 fabss	%f0, %f0		! return absolute value
+double
+frexp(value, eptr)
+	double value;
+	int *eptr;
+{
+	union {
+		double v;
+		struct {
+			u_int u_mant1 :  7;
+			u_int   u_exp :  8;
+			u_int  u_sign :  1;
+			u_int u_mant2 : 16;
+			u_int u_mant3 : 32;
+		} s;
+	} u;
+
+	if (value) {
+		u.v = value;
+		*eptr = u.s.u_exp - 128;
+		u.s.u_exp = 128;
+		return(u.v);
+	} else {
+		*eptr = 0;
+		return((double)0);
+	}
+}
+
+#ifdef	lint
+/* PROTOLIB1 */
+long double frexpl(long double, int *);
+#else	/* lint */
+__weak_alias(frexpl, frexp);
+#endif	/* lint */

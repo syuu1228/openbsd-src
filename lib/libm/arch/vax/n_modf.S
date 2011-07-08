@@ -1,4 +1,4 @@
-/* $OpenBSD: src/lib/libc/arch/vax/gen/fabs.S,v 1.6 2008/12/10 08:26:21 deraadt Exp $ */
+/* $OpenBSD: src/lib/libm/arch/vax/n_modf.S,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
 /*
  * Copyright (c) 1983, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -28,14 +28,27 @@
  * SUCH DAMAGE.
  */
 
-/* fabs - floating absolute value */
+/*
+ * double modf (value, iptr)
+ * double value, *iptr;
+ *
+ * Modf returns the fractional part of "value",
+ * and stores the integer part indirectly through "iptr".
+ */
 
 #include "DEFS.h"
 
-WEAK_ALIAS(fabsl,fabs)
-ENTRY(fabs, 0)
-	movd	4(ap),r0
-	bgeq	1f
-	mnegd	r0,r0
+ENTRY(modf, R2)
+	cvtdl	4(ap),r2
+	bvs	0f
+	cvtld	r2,*12(ap)
+	subd3	*12(ap),4(ap),r0
+	ret
+0:
+	emodd	4(ap),$0,$0f1.0,r2,r0
+	bvs	1f			# integer overflow
+	cvtld	r2,*12(ap)
+	ret
 1:
+	subd3	r0,4(ap),*12(ap)
 	ret
