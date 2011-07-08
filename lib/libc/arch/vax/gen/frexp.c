@@ -1,11 +1,7 @@
-/* $OpenBSD: src/lib/libm/arch/mc68881/s_modf.S,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
+/*	$OpenBSD: src/lib/libc/arch/vax/gen/frexp.c,v 1.10 2011/07/08 22:28:33 martynas Exp $ */
 /*-
- * Copyright (c) 1990 The Regents of the University of California.
- * All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * the Systems Programming Group of the University of Utah Computer
- * Science Department.
+ * Copyright (c) 1991, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,19 +28,42 @@
  * SUCH DAMAGE.
  */
 
-#include "DEFS.h"
+/* LINTLIBRARY */
 
-/*
- * double modf(val, iptr)
- * returns: xxx and n (in *iptr) where val == n.xxx
- */
-ENTRY(modf)
-	fmoved	sp@(4),fp0
-	movel	sp@(12),a0
-	fintrzx	fp0,fp1
-	fmoved	fp1,a0@
-	fsubx	fp1,fp0
-	fmoved	fp0,sp@-
-	movel	sp@+,d0
-	movel	sp@+,d1
-	rts
+#include <sys/cdefs.h>
+#include <sys/types.h>
+#include <math.h>
+
+double
+frexp(value, eptr)
+	double value;
+	int *eptr;
+{
+	union {
+		double v;
+		struct {
+			u_int u_mant1 :  7;
+			u_int   u_exp :  8;
+			u_int  u_sign :  1;
+			u_int u_mant2 : 16;
+			u_int u_mant3 : 32;
+		} s;
+	} u;
+
+	if (value) {
+		u.v = value;
+		*eptr = u.s.u_exp - 128;
+		u.s.u_exp = 128;
+		return(u.v);
+	} else {
+		*eptr = 0;
+		return((double)0);
+	}
+}
+
+#ifdef	lint
+/* PROTOLIB1 */
+long double frexpl(long double, int *);
+#else	/* lint */
+__weak_alias(frexpl, frexp);
+#endif	/* lint */

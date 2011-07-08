@@ -1,10 +1,11 @@
-/* $OpenBSD: src/lib/libm/arch/i387/s_fabs.S,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
-/*-
- * Copyright (c) 1990 The Regents of the University of California.
- * All rights reserved.
+/* $OpenBSD: src/lib/libc/arch/sparc/gen/fabs.S,v 1.8 2011/07/08 22:28:33 martynas Exp $ */
+/*
+ * Copyright (c) 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
- * This code is derived from software contributed to Berkeley by
- * William Jolitz.
+ * This software was developed by the Computer Systems Engineering group
+ * at Lawrence Berkeley Laboratory under DARPA contract BG 91-66 and
+ * contributed to Berkeley.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,9 +32,13 @@
  * SUCH DAMAGE.
  */
 
-#include <machine/asm.h>
+/* fabs - floating absolute value */
 
+#include "DEFS.h"
+
+WEAK_ALIAS(fabsl, fabs)
 ENTRY(fabs)
-	fldl	4(%esp)
-	fabs
-	ret
+	std	%o0, [%sp + 32]		! return value => %f0:f1
+	ldd	[%sp + 32], %f0		! (via kernel %o0/%o1 slot)
+	retl
+	 fabss	%f0, %f0		! return absolute value

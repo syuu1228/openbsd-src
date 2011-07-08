@@ -1,4 +1,4 @@
-/* $OpenBSD: src/lib/libm/arch/m88k/s_fabs.S,v 1.1 2011/07/08 19:21:42 martynas Exp $ */
+/* $OpenBSD: src/lib/libc/arch/m88k/gen/fabs.S,v 1.9 2011/07/08 22:28:33 martynas Exp $ */
 /*-
  * Copyright (c) 1996 Nivas Madhur
  * All rights reserved.

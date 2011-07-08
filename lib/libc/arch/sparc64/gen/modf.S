@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/lib/libm/arch/sparc64/s_modf.S,v 1.1 2011/07/08 19:21:42 martynas Exp $	*/
+/*	$OpenBSD: src/lib/libc/arch/sparc64/gen/modf.S,v 1.5 2011/07/08 22:28:33 martynas Exp $	*/
 /*	$NetBSD: modf.S,v 1.3 2000/11/01 23:32:41 eeh Exp $	*/
 
 /*
