@@ -1,4 +1,4 @@
-#	$OpenBSD: src/sys/arch/sparc64/conf/GENERIC,v 1.267 2011/07/07 23:41:09 tedu Exp $
+#	$OpenBSD: src/sys/arch/sparc64/conf/GENERIC,v 1.268 2011/07/10 18:49:38 deraadt Exp $
 #
 # For further information on compiling OpenBSD kernels, see the config(8)
 # man page.
@@ -82,6 +82,8 @@ dc*	at cardbus?		# 21143, "tulip" clone ethernet
 epic*	at pci?			# SMC EPIC/100 ethernet
 em*	at pci?			# Intel Pro/1000 ethernet
 #ixgb*	at pci?			# Intel Pro/10Gb ethernet
+ixgb*	at pci?			# Intel Pro/10Gb ethernet
+ix*	at pci?			# Intel 82598EB 10Gb ethernet
 myx*	at pci?			# Myricom Myri-10G 10Gb ethernet
 bge*	at pci?			# Broadcom BCM570x (aka Tigon3)
 bnx*	at pci?			# Broadcom BCM5706/5708 GigE

@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/sparc64/sparc64/clock.c,v 1.48 2010/07/07 15:37:22 kettenis Exp $	*/
+/*	$OpenBSD: src/sys/arch/sparc64/sparc64/clock.c,v 1.49 2011/07/10 18:49:39 deraadt Exp $	*/
 /*	$NetBSD: clock.c,v 1.41 2001/07/24 19:29:25 eeh Exp $ */
 
 /*
@@ -173,6 +173,8 @@ struct cfattach clock_fhc_ca = {
 /* Global TOD clock handle & idprom pointer */
 todr_chip_handle_t todr_handle = NULL;
 static struct idprom *idprom;
+static struct evcount stat_count;
+static int stat_irq = 2; /* so it does not collide with soft intr or clock */
 
 static int	timermatch(struct device *, void *, void *);
 static void	timerattach(struct device *, struct device *, void *);
@@ -620,8 +622,7 @@ cpu_initclocks(void)
 		strlcpy(level0.ih_name, "clock", sizeof(level0.ih_name));
 		intr_establish(10, &level0);
 
-		/* We only have one timer so we have no statclock */
-		stathz = 0;	
+		evcount_attach(&stat_count, "stat", &stat_irq);
 
 		if (sys_tick_rate > 0) {
 			tick_increment = sys_tick_rate / hz;
@@ -638,6 +639,18 @@ cpu_initclocks(void)
 			level0.ih_fun = tickintr;
 			cpu_start_clock = tick_start;
 		}
+
+		/* we emulate two clocks so make these the same */
+		stathz = hz;	
+		profhz = hz * 10;
+
+		statint = (tick_increment * hz) / stathz;
+		statvar = 0x40000000; /* really big power of two */
+		/* find largest 2^n which is nearly smaller than statint/2  */
+		minint = statint / 2 + 100;
+		while (statvar > minint)
+			statvar >>= 1;
+		statmin = statint - (statvar >> 1);
 
 		for (ci = cpus; ci != NULL; ci = ci->ci_next)
 			memcpy(&ci->ci_tickintr, &level0, sizeof(level0));
@@ -705,7 +718,23 @@ void
 setstatclockrate(newhz)
 	int newhz;
 {
-	/* nothing */
+	int statint, minint;
+	int tstatmin, tstatvar;
+
+	if (stathz == profhz) /* not adjustable */
+		return;
+
+	statint = (tick_increment * hz) / newhz;
+	tstatvar = 0x40000000; /* really big power of two */
+	/* find largest 2^n which is nearly smaller than statint/2  */
+	minint = statint / 2 + 100;
+	while (tstatvar > minint)
+		tstatvar >>= 1;
+	tstatmin = statint - (tstatvar >> 1);
+
+	/* XXX - how to make setting these two atomic? */
+	statvar = tstatvar;
+	statmin = tstatmin;
 }
 
 /*
@@ -763,77 +792,92 @@ clockintr(cap)
  * %tick is really a level-14 interrupt.  We need to remap this in 
  * locore.s to a level 10.
  */
-int
-tickintr(cap)
-	void *cap;
+
+int tickintr_handle(void *, u_int64_t (*)(void), void (*)(u_int64_t));
+uint64_t read_hw_tick(void);
+uint64_t read_hw_sys_tick(void);
+uint64_t read_hw_stick(void);
+uint64_t
+read_hw_tick(void)
 {
-	struct cpu_info *ci = curcpu();
-	u_int64_t s;
-
-	/*
-	 * No need to worry about overflow; %tick is architecturally
-	 * defined not to do that for at least 10 years.
-	 */
-	while (ci->ci_tick < tick()) {
-		ci->ci_tick += tick_increment;
-		hardclock((struct clockframe *)cap);
-		atomic_add_ulong((unsigned long *)&level0.ih_count.ec_count, 1);
-	}
-
-	/* Reset the interrupt. */
-	s = intr_disable();
-	tickcmpr_set(ci->ci_tick);
-	intr_restore(s);
-
-	return (1);
+	return tick();
+}
+uint64_t
+read_hw_sys_tick(void)
+{
+	return sys_tick();
+}
+uint64_t
+read_hw_stick(void)
+{
+	return stick();
+}
+int
+tickintr(void *cap)
+{
+	return tickintr_handle(cap, read_hw_tick, tickcmpr_set);
 }
 
 int
-sys_tickintr(cap)
-	void *cap;
+sys_tickintr(void *cap)
+{
+	return tickintr_handle(cap, read_hw_sys_tick, sys_tickcmpr_set);
+}
+
+int
+stickintr(void *cap)
+{
+	return tickintr_handle(cap, read_hw_stick, stickcmpr_set);
+}
+
+int
+tickintr_handle(void *cap, u_int64_t (*read_tick)(void),
+    void (*cmpr_set)(u_int64_t))
 {
 	struct cpu_info *ci = curcpu();
+	u_int64_t tick, nextevent;
 	u_int64_t s;
+	int r;	/* Yes, this is signed */
+	int handled = 0;
+
+try_again:
+	tick = read_tick();
 
 	/*
 	 * Do we need to worry about overflow here?
 	 */
-	while (ci->ci_tick < sys_tick()) {
-		ci->ci_tick += tick_increment;
+	while (ci->ci_nexttimerevent < tick) {
+		ci->ci_nexttimerevent += tick_increment;
 		hardclock((struct clockframe *)cap);
 		atomic_add_ulong((unsigned long *)&level0.ih_count.ec_count, 1);
+		handled++;
 	}
+
+	while (ci->ci_nextstatevent <= tick) {
+		do {
+			r = random() & (statvar - 1);
+		} while (r == 0); /* random == 0 not allowed */
+		ci->ci_nextstatevent += statmin + r;
+		statclock((struct clockframe *)cap);
+		atomic_add_ulong((unsigned long *)&stat_count.ec_count, 1);
+		handled++;
+	}
+
+	if (ci->ci_nexttimerevent < ci->ci_nextstatevent)
+		nextevent = ci->ci_nexttimerevent;
+	else
+		nextevent = ci->ci_nextstatevent;
+
+	tick = read_tick();
+	if (nextevent <= tick)
+		goto try_again;
 
 	/* Reset the interrupt. */
 	s = intr_disable();
-	sys_tickcmpr_set(ci->ci_tick);
+	cmpr_set(nextevent);
 	intr_restore(s);
 
-	return (1);
-}
-
-int
-stickintr(cap)
-	void *cap;
-{
-	struct cpu_info *ci = curcpu();
-	u_int64_t s;
-
-	/*
-	 * Do we need to worry about overflow here?
-	 */
-	while (ci->ci_tick < stick()) {
-		ci->ci_tick += tick_increment;
-		hardclock((struct clockframe *)cap);
-		atomic_add_ulong((unsigned long *)&level0.ih_count.ec_count, 1);
-	}
-
-	/* Reset the interrupt. */
-	s = intr_disable();
-	stickcmpr_set(ci->ci_tick);
-	intr_restore(s);
-
-	return (1);
+	return (handled > 0);
 }
 
 /*
@@ -989,8 +1033,9 @@ tick_start(void)
 	 */
 
 	s = intr_disable();
-	ci->ci_tick = roundup(tick(), tick_increment);
-	tickcmpr_set(ci->ci_tick);
+	ci->ci_nextstatevent = roundup(tick(), tick_increment);
+	ci->ci_nexttimerevent = ci->ci_nextstatevent;
+	tickcmpr_set(ci->ci_nexttimerevent);
 	intr_restore(s);
 }
 
@@ -1006,8 +1051,9 @@ sys_tick_start(void)
 	 */
 
 	s = intr_disable();
-	ci->ci_tick = roundup(sys_tick(), tick_increment);
-	sys_tickcmpr_set(ci->ci_tick);
+	ci->ci_nextstatevent = roundup(sys_tick(), tick_increment);
+	ci->ci_nexttimerevent = ci->ci_nextstatevent;
+	sys_tickcmpr_set(ci->ci_nexttimerevent);
 	intr_restore(s);
 }
 
@@ -1023,8 +1069,9 @@ stick_start(void)
 	 */
 
 	s = intr_disable();
-	ci->ci_tick = roundup(stick(), tick_increment);
-	stickcmpr_set(ci->ci_tick);
+	ci->ci_nextstatevent = roundup(stick(), tick_increment);
+	ci->ci_nexttimerevent = ci->ci_nextstatevent;
+	stickcmpr_set(ci->ci_nexttimerevent);
 	intr_restore(s);
 }
 

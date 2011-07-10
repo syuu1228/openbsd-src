@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/sparc64/include/cpu.h,v 1.78 2011/07/06 22:26:44 kettenis Exp $	*/
+/*	$OpenBSD: src/sys/arch/sparc64/include/cpu.h,v 1.79 2011/07/10 18:49:38 deraadt Exp $	*/
 /*	$NetBSD: cpu.h,v 1.28 2001/06/14 22:56:58 thorpej Exp $ */
 
 /*
@@ -126,8 +126,9 @@ struct cpu_info {
 	int			ci_want_resched;
 	int			ci_handled_intr_level;
 	void			*ci_intrpending[16][8];
-	u_int64_t		ci_tick;
 	struct intrhand		ci_tickintr;
+	u_int64_t		ci_nexttimerevent;
+	u_int64_t		ci_nextstatevent;
 
 	/* DEBUG/DIAGNOSTIC stuff */
 	u_long			ci_spin_locks;	/* # of spin locks held */

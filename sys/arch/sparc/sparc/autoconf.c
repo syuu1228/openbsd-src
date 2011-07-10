@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/sparc/sparc/autoconf.c,v 1.93 2010/11/18 21:13:19 miod Exp $	*/
+/*	$OpenBSD: src/sys/arch/sparc/sparc/autoconf.c,v 1.94 2011/07/10 18:49:38 deraadt Exp $	*/
 /*	$NetBSD: autoconf.c,v 1.73 1997/07/29 09:41:53 fair Exp $ */
 
 /*
@@ -130,11 +130,9 @@ int	intr_sbus2ipl_4m[] = {
  * Depends on ASCII order (this *is* machine-dependent code, you know).
  */
 static char *
-str2hex(str, vp)
-	register char *str;
-	register int *vp;
+str2hex(char *str, int *vp)
 {
-	register int v, c;
+	int v, c;
 
 	for (v = 0;; v = v * 16 + c, str++) {
 		c = *(u_char *)str;
@@ -165,7 +163,7 @@ struct om_vector *oldpvec = (struct om_vector *)PROM_BASE;
  * We must finish mapping the kernel properly and glean any bootstrap info.
  */
 void
-bootstrap()
+bootstrap(void)
 {
 #if defined(SUN4C) || defined(SUN4E)
 	/*
@@ -383,10 +381,10 @@ bootstrap()
  */
 
 static void
-bootpath_build()
+bootpath_build(void)
 {
-	register char *cp, *pp;
-	register struct bootpath *bp;
+	char *cp, *pp;
+	struct bootpath *bp;
 
 	/*
 	 * On SS1s, promvec->pv_v0bootargs->ba_argv[1] contains the flags
@@ -497,9 +495,7 @@ bootpath_build()
  */
 
 static void
-bootpath_fake(bp, cp)
-	struct bootpath *bp;
-	char *cp;
+bootpath_fake(struct bootpath *bp, char *cp)
 {
 	register char *pp;
 	int v0val[3];
@@ -667,8 +663,7 @@ bootpath_fake(bp, cp)
  */
 
 static void
-bootpath_print(bp)
-	struct bootpath *bp;
+bootpath_print(struct bootpath *bp)
 {
 	printf("bootpath: ");
 	while (bp->name[0]) {
@@ -693,9 +688,7 @@ bootpath_print(bp)
  */
 
 struct bootpath *
-bootpath_store(storep, bp)
-	int storep;
-	struct bootpath *bp;
+bootpath_store(int storep, struct bootpath *bp)
 {
 	static struct bootpath *save;
 	struct bootpath *retval;
@@ -713,9 +706,7 @@ bootpath_store(storep, bp)
  * target of the (boot) device (i.e., the value in bp->v0val[0]).
  */
 static void
-crazymap(prop, map)
-	char *prop;
-	int *map;
+crazymap(char *prop, int *map)
 {
 	int i;
 	char *propval;
@@ -756,8 +747,7 @@ crazymap(prop, map)
 }
 
 int
-sd_crazymap(n)
-	int	n;
+sd_crazymap(int n)
 {
 	static int prom_sd_crazymap[8]; /* static: compute only once! */
 	static int init = 0;
@@ -776,7 +766,7 @@ sd_crazymap(n)
  * command.
  */
 void
-cpu_configure()
+cpu_configure(void)
 {
 	struct confargs oca;
 	register int node = 0;
@@ -891,15 +881,14 @@ diskconf(void)
  * no one really wants anything fancy...
  */
 void
-sync_crash()
+sync_crash(void)
 {
 
 	panic("PROM sync command");
 }
 
 char *
-clockfreq(freq)
-	register int freq;
+clockfreq(int freq)
 {
 	register char *p;
 	static char buf[10];
@@ -918,9 +907,7 @@ clockfreq(freq)
 
 /* ARGSUSED */
 static int
-mbprint(aux, name)
-	void *aux;
-	const char *name;
+mbprint(void *aux, const char *name)
 {
 	register struct confargs *ca = aux;
 
@@ -933,7 +920,7 @@ mbprint(aux, name)
 }
 
 int
-findroot()
+findroot(void)
 {
 	register int node;
 
@@ -948,9 +935,7 @@ findroot()
  * Return the node number, or 0 if not found.
  */
 int
-findnode(first, name)
-	int first;
-	register const char *name;
+findnode(int first, const char *name)
 {
 	register int node;
 
@@ -965,13 +950,13 @@ findnode(first, name)
  * was not the right size.
  */
 int
-romprop(rp, cp, node)
-	register struct romaux *rp;
-	const char *cp;
-	register int node;
+romprop(struct romaux *rp, const char *cp, int node)
 {
 	int len, n, intr;
-	union { char regbuf[256]; struct rom_reg rr[RA_MAXREG]; } u;
+	union {
+		char regbuf[256];
+		struct rom_reg rr[RA_MAXREG];
+	} u;
 	static const char pl[] = "property length";
 
 	bzero(u.regbuf, sizeof u);
@@ -1069,10 +1054,7 @@ romprop(rp, cp, node)
 }
 
 int
-mainbus_match(parent, self, aux)
-	struct device *parent;
-	void *self;
-	void *aux;
+mainbus_match(struct device *parent, void *self, void *aux)
 {
 	struct cfdata *cf = self;
 	register struct confargs *ca = aux;
@@ -1091,9 +1073,7 @@ int autoconf_nzs = 0;	/* must be global so obio.c can see it */
  * We also record the `node id' of the default frame buffer, if any.
  */
 static void
-mainbus_attach(parent, dev, aux)
-	struct device *parent, *dev;
-	void *aux;
+mainbus_attach(struct device *parent, struct device *dev, void *aux)
 {
 	struct confargs oca;
 	register const char *const *ssp, *sp = NULL;
@@ -1373,8 +1353,7 @@ struct cfdriver mainbus_cd = {
  * FORTH PROM to map in the required zs chips.
  */
 void *
-findzs(zs)
-	int zs;
+findzs(int zs)
 {
 
 #if defined(SUN4)
@@ -1523,11 +1502,7 @@ makememarr(struct memarr *ap, u_int xmax, int which)
  * Internal form of getprop().  Returns the actual length.
  */
 int
-getprop(node, name, buf, bufsiz)
-	int node;
-	char *name;
-	void *buf;
-	register int bufsiz;
+getprop(int node, char *name, void *buf, int bufsiz)
 {
 #if defined(SUN4C) || defined(SUN4D) || defined(SUN4E) || defined(SUN4M)
 	register struct nodeops *no;
@@ -1562,9 +1537,7 @@ getprop(node, name, buf, bufsiz)
  * Internal form of proplen().  Returns the property length.
  */
 int
-getproplen(node, name)
-	int node;
-	char *name;
+getproplen(int node, char *name)
 {
 	register struct nodeops *no = promvec->pv_nodeops;
 
@@ -1577,9 +1550,7 @@ getproplen(node, name)
  * subsequent calls.
  */
 char *
-getpropstring(node, name)
-	int node;
-	char *name;
+getpropstring(int node, char *name)
 {
 	register int len;
 	static char stringbuf[32];
@@ -1596,10 +1567,7 @@ getpropstring(node, name)
  * The return value is the property, or the default if there was none.
  */
 int
-getpropint(node, name, deflt)
-	int node;
-	char *name;
-	int deflt;
+getpropint(int node, char *name, int deflt)
 {
 	register int len;
 	char intbuf[16];
@@ -1615,16 +1583,14 @@ getpropint(node, name, deflt)
  * from the rest of the kernel.
  */
 int
-firstchild(node)
-	int node;
+firstchild(int node)
 {
 
 	return (promvec->pv_nodeops->no_child(node));
 }
 
 int
-nextsibling(node)
-	int node;
+nextsibling(int node)
 {
 
 	return (promvec->pv_nodeops->no_nextnode(node));
@@ -1632,9 +1598,7 @@ nextsibling(node)
 
 /* The following recursively searches a PROM tree for a given node */
 int
-search_prom(rootnode, name)
-        register int rootnode;
-        register char *name;
+search_prom(int rootnode, char *name)
 {
         register int rtnnode;
         register int node = rootnode;
@@ -1663,9 +1627,9 @@ search_prom(rootnode, name)
 
 /* The following are used primarily in consinit() */
 
+/* translate phys. device path to node */
 int
-opennode(path)		/* translate phys. device path to node */
-	register char *path;
+opennode(char *path)
 {
 	register int fd;
 
