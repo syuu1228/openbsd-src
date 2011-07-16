@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/sparc64/sparc64/autoconf.c,v 1.113 2011/07/10 18:49:39 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/sparc64/sparc64/autoconf.c,v 1.113 2011/07/16 16:48:42 matthew Exp $	*/
 /*	$NetBSD: autoconf.c,v 1.51 2001/07/24 19:32:11 eeh Exp $ */
 
 /*
@@ -273,7 +273,8 @@ done:
  * We will try to run out of the prom until we get to cpu_init().
  */
 void
-bootstrap(int nctx)
+bootstrap(nctx)
+	int nctx;
 {
 	extern int end;	/* End of kernel */
 	struct trapvec *romtba;
@@ -452,7 +453,7 @@ bootpath_nodes(struct bootpath *bp, int nbp)
  */
 
 static void
-bootpath_build(void)
+bootpath_build()
 {
 	register char *cp, *pp;
 	register struct bootpath *bp;
@@ -570,7 +571,8 @@ bootpath_build(void)
  */
 
 static void
-bootpath_print(struct bootpath *bp)
+bootpath_print(bp)
+	struct bootpath *bp;
 {
 	printf("bootpath: ");
 	while (bp->name[0]) {
@@ -594,7 +596,9 @@ bootpath_print(struct bootpath *bp)
  * device_register(), and use this to recover the bootpath.
  */
 struct bootpath *
-bootpath_store(int storep, struct bootpath *bp)
+bootpath_store(storep, bp)
+	int storep;
+	struct bootpath *bp;
 {
 	static struct bootpath *save;
 	struct bootpath *retval;
@@ -613,7 +617,7 @@ bootpath_store(int storep, struct bootpath *bp)
  * command.
  */
 void
-cpu_configure(void)
+cpu_configure()
 {
 #ifdef SUN4V
 	if (CPU_ISSUN4V)
@@ -717,14 +721,15 @@ diskconf(void)
  * no one really wants anything fancy...
  */
 void
-sync_crash(void)
+sync_crash()
 {
 
 	panic("PROM sync command");
 }
 
 char *
-clockfreq(long freq)
+clockfreq(freq)
+	long freq;
 {
 	char *p;
 	static char buf[10];
@@ -743,7 +748,9 @@ clockfreq(long freq)
 
 /* ARGSUSED */
 static int
-mbprint(void *aux, const char *name)
+mbprint(aux, name)
+	void *aux;
+	const char *name;
 {
 	struct mainbus_attach_args *ma = aux;
 
@@ -757,7 +764,7 @@ mbprint(void *aux, const char *name)
 }
 
 int
-findroot(void)
+findroot()
 {
 	register int node;
 
@@ -772,7 +779,9 @@ findroot(void)
  * Return the node number, or 0 if not found.
  */
 int
-findnode(int first, const char *name)
+findnode(first, name)
+	int first;
+	register const char *name;
 {
 	int node;
 	char buf[32];
@@ -786,7 +795,10 @@ findnode(int first, const char *name)
 }
 
 int
-mainbus_match(struct device *parent, void *cf, void *aux)
+mainbus_match(parent, cf, aux)
+	struct device *parent;
+	void *cf;
+	void *aux;
 {
 
 	return (1);
@@ -800,10 +812,13 @@ mainbus_match(struct device *parent, void *cf, void *aux)
  * We also record the `node id' of the default frame buffer, if any.
  */
 static void
-mainbus_attach(struct device *parent, struct device *dev, void *aux)
+mainbus_attach(parent, dev, aux)
+	struct device *parent, *dev;
+	void *aux;
 {
-	extern struct sparc_bus_dma_tag mainbus_dma_tag;
-	extern bus_space_tag_t mainbus_space_tag;
+extern struct sparc_bus_dma_tag mainbus_dma_tag;
+extern bus_space_tag_t mainbus_space_tag;
+
 	struct mainbus_attach_args ma;
 	char buf[64];
 	const char *const *ssp, *sp = NULL;
@@ -1041,7 +1056,12 @@ struct cfattach mainbus_ca = {
 };
 
 int
-getprop(int node, char *name, size_t size, int *nitem, void **bufp)
+getprop(node, name, size, nitem, bufp)
+	int	node;
+	char	*name;
+	size_t	size;
+	int	*nitem;
+	void	**bufp;
 {
 	void	*buf;
 	long	len;
@@ -1073,7 +1093,9 @@ getprop(int node, char *name, size_t size, int *nitem, void **bufp)
  * Internal form of proplen().  Returns the property length.
  */
 long
-getproplen(int node, char *name)
+getproplen(node, name)
+	int node;
+	char *name;
 {
 	return (OF_getproplen(node, name));
 }
@@ -1084,7 +1106,9 @@ getproplen(int node, char *name)
  * subsequent calls.
  */
 char *
-getpropstring(int node, char *name)
+getpropstring(node, name)
+	int node;
+	char *name;
 {
 	static char stringbuf[32];
 
@@ -1093,7 +1117,10 @@ getpropstring(int node, char *name)
 
 /* Alternative getpropstring(), where caller provides the buffer */
 char *
-getpropstringA(int node, char *name, char *buffer)
+getpropstringA(node, name, buffer)
+	int node;
+	char *name;
+	char *buffer;
 {
 	int blen;
 
@@ -1109,7 +1136,10 @@ getpropstringA(int node, char *name, char *buffer)
  * The return value is the property, or the default if there was none.
  */
 int
-getpropint(int node, char *name, int deflt)
+getpropint(node, name, deflt)
+	int node;
+	char *name;
+	int deflt;
 {
 	int intbuf;
 
@@ -1120,7 +1150,9 @@ getpropint(int node, char *name, int deflt)
 }
 
 int
-getpropspeed(int node, char *name)
+getpropspeed(node, name)
+	int node;
+	char *name;
 {
 	char buf[128];
 	int i, speed = 0;
@@ -1145,14 +1177,16 @@ getpropspeed(int node, char *name)
  * from the rest of the kernel.
  */
 int
-firstchild(int node)
+firstchild(node)
+	int node;
 {
 
 	return OF_child(node);
 }
 
 int
-nextsibling(int node)
+nextsibling(node)
+	int node;
 {
 
 	return OF_peer(node);
@@ -1179,9 +1213,10 @@ checkstatus(int node)
 	return 1;
 }
 
-/* returns 1 if node has given property */
 int
-node_has_property(int node, const char *prop)	
+node_has_property(node, prop)	/* returns 1 if node has given property */
+	register int node;
+	register const char *prop;
 {
 	return (OF_getproplen(node, (caddr_t)prop) != -1);
 }
@@ -1191,7 +1226,8 @@ node_has_property(int node, const char *prop)
  * variables.  Returns nonzero on error.
  */
 int
-romgetcursoraddr(int **rowp, int **colp)
+romgetcursoraddr(rowp, colp)
+	int **rowp, **colp;
 {
 	cell_t row = 0, col = 0;
 
@@ -1211,7 +1247,7 @@ romgetcursoraddr(int **rowp, int **colp)
 }
 
 void
-callrom(void)
+callrom()
 {
 
 	__asm __volatile("wrpr	%%g0, 0, %%tl" : );
@@ -1222,7 +1258,9 @@ callrom(void)
  * find a device matching "name" and unit number
  */
 struct device *
-getdevunit(char *name, int unit)
+getdevunit(name, unit)
+	char *name;
+	int unit;
 {
 	struct device *dev = TAILQ_FIRST(&alldevs);
 	char num[10], fullname[16];
@@ -1323,11 +1361,8 @@ device_register(struct device *dev, void *aux)
 	}
 
 	if (strcmp(devname, "scsibus") == 0) {
-		struct scsibus_attach_args *saa = aux;
-		struct scsi_link *sl = saa->saa_sc_link;
-
 		if (strcmp(bp->name, "fp") == 0 &&
-		    bp->val[0] == sl->bus->sc_dev.dv_unit) {
+		    bp->val[0] == dev->dv_unit) {
 			DPRINTF(ACDB_BOOTDEV, ("\t-- matched component %s to %s\n",
 			    bp->name, dev->dv_xname));
 			bootpath_store(1, bp + 1);
@@ -1401,7 +1436,9 @@ device_register(struct device *dev, void *aux)
 }
 
 void
-nail_bootdev(struct device *dev, struct bootpath *bp)
+nail_bootdev(dev, bp)
+	struct device *dev;
+	struct bootpath *bp;
 {
 
 	if (bp->dev != NULL)
