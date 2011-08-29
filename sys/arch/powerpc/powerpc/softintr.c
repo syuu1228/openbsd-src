@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/powerpc/powerpc/softintr.c,v 1.4 2011/07/10 18:49:37 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/powerpc/powerpc/softintr.c,v 1.4 2011/08/29 20:21:44 drahn Exp $	*/
 /*	$NetBSD: softintr.c,v 1.2 2003/07/15 00:24:39 lukem Exp $	*/
 
 /*

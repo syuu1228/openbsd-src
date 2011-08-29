@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/powerpc/powerpc/mutex.S,v 1.14 2011/07/10 18:49:37 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/powerpc/powerpc/mutex.S,v 1.14 2011/08/29 20:21:44 drahn Exp $	*/
 
 /*
  * Copyright (c) 2007 Dale Rahn

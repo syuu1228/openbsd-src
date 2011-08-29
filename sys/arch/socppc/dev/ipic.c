@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/socppc/dev/ipic.c,v 1.15 2011/07/10 18:49:38 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/socppc/dev/ipic.c,v 1.15 2011/08/29 20:21:44 drahn Exp $	*/
 
 /*
  * Copyright (c) 2008 Mark Kettenis
@@ -67,6 +67,7 @@ struct ipic_softc {
 uint32_t ipic_imask;
 struct intrq ipic_handler[IPIC_NVEC];
 struct ipic_softc *ipic_sc;
+int	ipic_preinit_done; /* defaults to 0 - not initialized */
 
 int	ipic_match(struct device *, void *, void *);
 void	ipic_attach(struct device *, struct device *, void *);
@@ -79,6 +80,7 @@ struct cfdriver ipic_cd = {
 	NULL, "ipic", DV_DULL
 };
 
+void ipic_preinit(void);
 uint32_t ipic_read(struct ipic_softc *, bus_addr_t);
 void	ipic_write(struct ipic_softc *, bus_addr_t, uint32_t);
 uint32_t ipic_simsr_h(int);
@@ -93,8 +95,19 @@ ppc_spllower_t ipic_spllower;
 ppc_splx_t ipic_splx;
 
 void	ipic_setipl(int);
-void	ipic_do_pending(int);
 
+void
+ipic_preinit(void)
+{
+	int i;
+	struct intrq *iq;
+
+	for (i = 0; i < IPIC_NVEC; i++) {
+		iq = &ipic_handler[i];
+		TAILQ_INIT(&iq->iq_list);
+	}
+	ipic_preinit_done = 1;
+}
 
 int
 ipic_match(struct device *parent, void *cfdata, void *aux)
@@ -116,7 +129,6 @@ ipic_attach(struct device *parent, struct device *self, void *aux)
 	struct obio_attach_args *oa = aux;
 	int ivec;
 	struct intrq *iq;
-	int i;
 
 	sc->sc_iot = oa->oa_iot;
 	if (bus_space_map(sc->sc_iot, oa->oa_offset, 128, 0, &sc->sc_ioh)) {
@@ -126,23 +138,23 @@ ipic_attach(struct device *parent, struct device *self, void *aux)
 
 	ipic_sc = sc;
 
+	/* if ipic_preinit has not happened, do it here */
+	if (ipic_preinit_done == 0)
+		ipic_preinit();
+
 	/*
 	 * Deal with pre-established interrupts.
 	 */
-	for (i = 0; i < IPIC_NVEC; i++) {
-		iq = &ipic_handler[i];
-		TAILQ_INIT(&iq->iq_list);
-	}
-
 	for (ivec = 0; ivec < IPIC_NVEC; ivec++) {
-		if (ipic_intrhand[ivec]) {
-			int level = ipic_intrhand[ivec]->ih_level;
+		iq = &ipic_handler[ivec];
+		if (!TAILQ_EMPTY(&iq->iq_list)) {
+			int level = TAILQ_FIRST(&iq->iq_list)->ih_level;
 			uint32_t mask;
 
 			sc->sc_simsr_h[level] |= ipic_simsr_h(ivec);
 			sc->sc_simsr_l[level] |= ipic_simsr_l(ivec);
 			sc->sc_semsr[level] |= ipic_semsr(ivec);
-			intr_calculatemasks();
+			ipic_calc_masks();
 
 			/* Unmask the interrupt. */
 			mask = ipic_read(sc, IPIC_SIMSR_H);
@@ -269,6 +281,9 @@ intr_establish(int ivec, int type, int level,
 	uint32_t mask;
 	int s;
 
+	if (ipic_preinit_done == 0)
+		ipic_preinit();
+
 	ih = malloc(sizeof *ih, M_DEVBUF, cold ? M_NOWAIT : M_WAITOK);
 	if (ih == NULL)
 		panic("%s: malloc failed", __func__);
@@ -331,8 +346,11 @@ ext_intr(void)
 
 	iq = &ipic_handler[ivec];
 	TAILQ_FOREACH(ih, &iq->iq_list, ih_list) {
-		if (ih->ih_level < pcpl)
+		if (ih->ih_level <= pcpl) {
+			panic("irq handler called at wrong level %d %d",
+			    ih->ih_level, pcpl);
 			continue;
+		}
 
 		ipic_splraise(ih->ih_level);
 		ppc_intr_enable(1);
@@ -380,7 +398,7 @@ ipic_splx(int newcpl)
 
 	ipic_setipl(newcpl);
 	if (ci->ci_ipending & ppc_smask[newcpl])
-		ipic_do_pending(newcpl);
+		do_pending_int();
 }
 
 void
@@ -399,55 +417,5 @@ ipic_setipl(int ipl)
 	ipic_write(sc, IPIC_SIMSR_L, mask);
 	mask = sc->sc_semsr[IPL_HIGH] & ~sc->sc_semsr[ipl];
 	ipic_write(sc, IPIC_SEMSR, mask);
-	ppc_intr_enable(s);
-}
-
-void
-ipic_do_pending(int pcpl)
-{
-	struct cpu_info *ci = curcpu();
-	int s;
-
-	s = ppc_intr_disable();
-	if (ci->ci_iactive & CI_IACTIVE_PROCESSING_SOFT) {
-		ppc_intr_enable(s);
-		return;
-	}
-
-	atomic_setbits_int(&ci->ci_iactive, CI_IACTIVE_PROCESSING_SOFT);
-
-	do {
-		if ((ci->ci_ipending & SI_TO_IRQBIT(SI_SOFTNET)) &&
-		    (pcpl < IPL_SOFTNET)) {
-			extern int netisr;
-			int pisr;
-		       
-			ci->ci_ipending &= ~SI_TO_IRQBIT(SI_SOFTNET);
-			ci->ci_cpl = IPL_SOFTNET;
-			ppc_intr_enable(s);
-			KERNEL_LOCK();
-			while ((pisr = netisr) != 0) {
-				atomic_clearbits_int(&netisr, pisr);
-				softnet(pisr);
-			}
-			KERNEL_UNLOCK();
-			ppc_intr_disable();
-			continue;
-		}
-		if ((ci->ci_ipending & SI_TO_IRQBIT(SI_SOFTCLOCK)) &&
-		    (pcpl < IPL_SOFTCLOCK)) {
-			ci->ci_ipending &= ~SI_TO_IRQBIT(SI_SOFTCLOCK);
-			ci->ci_cpl = IPL_SOFTCLOCK;
-			ppc_intr_enable(s);
-			KERNEL_LOCK();
-			softclock();
-			KERNEL_UNLOCK();
-			ppc_intr_disable();
-			continue;
-		}
-	} while (ci->ci_ipending & ppc_smask[pcpl]);
-	ipic_setipl(pcpl);	/* Don't use splx... we are here already! */
-
-	atomic_clearbits_int(&ci->ci_iactive, CI_IACTIVE_PROCESSING_SOFT);
 	ppc_intr_enable(s);
 }

@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/socppc/socppc/clock.c,v 1.9 2011/07/10 18:49:38 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/socppc/socppc/clock.c,v 1.9 2011/08/29 20:21:44 drahn Exp $	*/
 /*	$NetBSD: clock.c,v 1.1 1996/09/30 16:34:40 ws Exp $	*/
 
 /*

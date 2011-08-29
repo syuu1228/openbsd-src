@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/powerpc/include/intr.h,v 1.47 2011/07/10 18:49:37 deraadt Exp $ */
+/*	$OpenBSD: src/sys/arch/powerpc/include/intr.h,v 1.47 2011/08/29 20:21:43 drahn Exp $ */
 
 /*
  * Copyright (c) 1997 Per Fogelstrom, Opsycon AB and RTMX Inc, USA.

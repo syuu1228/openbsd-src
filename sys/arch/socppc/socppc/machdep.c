@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/socppc/socppc/machdep.c,v 1.33 2011/07/10 18:49:38 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/socppc/socppc/machdep.c,v 1.33 2011/08/29 20:21:44 drahn Exp $	*/
 /*	$NetBSD: machdep.c,v 1.4 1996/10/16 19:33:11 ws Exp $	*/
 
 /*
@@ -1126,7 +1126,7 @@ do_pending_int(void)
 		}
 
 	} while (ci->ci_ipending & ppc_smask[pcpl]);
-	macintr_setipl(pcpl);
+	splx(pcpl);
 	ppc_intr_enable(s);
 
 	atomic_clearbits_int(&ci->ci_iactive, CI_IACTIVE_PROCESSING_SOFT);
