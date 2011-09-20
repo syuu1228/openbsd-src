@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/sys/arch/zaurus/zaurus/autoconf.c,v 1.15 2011/07/10 18:49:39 deraadt Exp $	*/
+/*	$OpenBSD: src/sys/arch/zaurus/zaurus/autoconf.c,v 1.15 2011/09/20 22:02:13 miod Exp $	*/
 /*	$NetBSD: autoconf.c,v 1.2 2001/09/05 16:17:36 matt Exp $	*/
 
 /*
@@ -58,7 +58,6 @@
 #include <dev/cons.h>
 
 struct device *bootdv = NULL;
-extern char *boot_file;
 
 void dumpconf(void);
 
@@ -68,7 +67,7 @@ void dumpconf(void);
  * always determine the correct root disk.
  */
 void
-diskconf(void)
+diskconf()
 {
 	extern struct timeout	scoop_checkdisk;
 	dev_t tmpdev;
