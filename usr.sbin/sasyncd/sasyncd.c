@@ -1,4 +1,4 @@
-/*	$OpenBSD: src/usr.sbin/sasyncd/sasyncd.c,v 1.20 2010/06/16 17:39:05 reyk Exp $	*/
+/*	$OpenBSD: src/usr.sbin/sasyncd/sasyncd.c,v 1.23 2012/04/14 12:11:08 haesbaert Exp $	*/
 
 /*
  * Copyright (c) 2005 Håkan Olsson.  All rights reserved.
@@ -153,13 +153,11 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	memset(&cfgstate, 0, sizeof cfgstate);
-
 	while ((ch = getopt(argc, argv, "c:dv")) != -1) {
 		switch (ch) {
 		case 'c':
 			if (cfgfile)
-				return 2;
+				usage();
 			cfgfile = optarg;
 			break;
 		case 'd':
@@ -231,14 +229,3 @@ main(int argc, char **argv)
 	pfkey_shutdown();
 	return 0;
 }
-
-/* Special for compiling with Boehms GC. See Makefile and sasyncd.h  */
-#if defined (GC_DEBUG)
-char *
-gc_strdup(const char *x)
-{
-        char *strcpy(char *,const char *);
-        char *y = malloc(strlen(x) + 1);
-        return strcpy(y,x);
-}
-#endif
