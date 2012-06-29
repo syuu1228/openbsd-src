@@ -729,6 +729,11 @@ hw_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp, void *newp,
 			    allowpowerdown));
 		return (sysctl_int(oldp, oldlenp, newp, newlen,
 		    &allowpowerdown));
+#ifdef VMM
+	case HW_VMM:
+		return (vmm_sysctl(name + 1, namelen - 1, oldp, oldlenp,
+		    newp, newlen));
+#endif
 	default:
 		return (EOPNOTSUPP);
 	}

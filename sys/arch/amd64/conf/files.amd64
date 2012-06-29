@@ -248,6 +248,34 @@ attach	ipmi at mainbus
 # VMware Tools
 attach	vmt at mainbus
 
+# BHyVe
+define	vmm
+device	vmm
+attach	vmm at mainbus
+file	arch/amd64/vmm/vmm.c			vmm
+file	arch/amd64/vmm/vmm_dev.c		vmm
+file	arch/amd64/vmm/vmm_ipi.c		vmm
+file	arch/amd64/vmm/vmm_lapic.c		vmm
+file	arch/amd64/vmm/vmm_mem.c		vmm
+file	arch/amd64/vmm/vmm_msr.c		vmm
+file	arch/amd64/vmm/vmm_stat.c		vmm
+file	arch/amd64/vmm/vmm_util.c		vmm
+file	arch/amd64/vmm/x86.c			vmm
+file	arch/amd64/vmm/vmm_support.S		vmm
+
+file	arch/amd64/vmm/io/iommu.c		vmm
+#file	arch/amd64/vmm/io/ppt.c			vmm
+file	arch/amd64/vmm/io/vdev.c		vmm
+file	arch/amd64/vmm/io/vlapic.c		vmm
+
+file	arch/amd64/vmm/intel/ept.c		vmm
+file	arch/amd64/vmm/intel/vmcs.c		vmm
+file	arch/amd64/vmm/intel/vmx_msr.c		vmm
+file	arch/amd64/vmm/intel/vmx.c		vmm
+#file	arch/amd64/vmm/intel/vtd.c		vmm
+
+#file	arch/amd64/vmm/amd/amdv.c		vmm
+
 #
 # device major numbers
 #

@@ -973,6 +973,7 @@ extern void (*cpu_setperf)(int);
 int bpf_sysctl(int *, u_int, void *, size_t *, void *, size_t);
 int pflow_sysctl(int *, u_int, void *, size_t *, void *, size_t);
 int pipex_sysctl(int *, u_int, void *, size_t *, void *, size_t);
+int vmm_sysctl(int *, u_int, void *, size_t *, void *, size_t);
 
 #else	/* !_KERNEL */
 #include <sys/cdefs.h>
